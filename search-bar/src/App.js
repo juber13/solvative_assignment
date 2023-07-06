@@ -23,14 +23,13 @@ function App() {
 
     document.addEventListener('keydown', handleKeyDown);
 
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+    return () => { document.removeEventListener('keydown', handleKeyDown); 
     };
   }, []);
 
 
   const handlePlace = (e) => {
-    if(e.target.value === "") return;
+    // if(e.target.value === "") return;
     setPlace(e.target.value);
   }
 
@@ -55,21 +54,34 @@ function App() {
   };
 
   useEffect(() => {
-    axios.request(options).then(function (response) {
-      if(!response.data) setLoading(true);
-      else{
-        setData(response.data.data);
-        setLoading(false);
-        setTotalPages(Math.ceil(data.length / 5));
-      };
-    }).catch(function (error) {
-      console.error(error);
-    });
-
-    console.log(data);
-
-  },[place])
-
+    let timerId;
+  
+    const fetchData = () => {
+      axios.request(options)
+        .then(function(response) {
+          if (!response.data) setLoading(true);
+          else {
+            setData(response.data.data);
+            setLoading(false);
+            setTotalPages(Math.ceil(response.data.data.length / 5));
+          }
+        })
+        .catch(function(error) {
+          console.error(error);
+        });
+    };
+  
+    const debounceFetchData = () => {
+      clearTimeout(timerId);
+      timerId = setTimeout(fetchData, 1500);
+    };
+  
+    debounceFetchData();
+   
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [place, limit]);
 
   const itemsPerPage = 5;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -95,7 +107,7 @@ function App() {
             <th>Place Name</th>
             <th>Country</th>
           </tr>
-           {loading ? <div className='spinner'>Loding...</div> : itemsToDisplay.map((item , index) => {
+           {itemsToDisplay.length > 0 ? itemsToDisplay.map((item , index) => {
             return(
              <tr> 
                <td>{index + 1}</td>
@@ -103,7 +115,7 @@ function App() {
                <td>{item.country}</td>
              </tr>
             )
-           })}
+           }) : <p>No Data Found</p>} 
         </table>
       </div>
 
